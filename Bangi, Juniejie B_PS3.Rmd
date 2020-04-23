@@ -1,0 +1,235 @@
+---
+title: "Math 215/221: Time Series Analysis"
+subtitle: "Problem Set 3"
+institution: "University of Southeastern Philippines"
+author: "By Juniejie Bangi"
+date: "April 23, 2020"
+output: html_document
+---
+<br/><br/>
+<ins>***Problem  2.1***</ins>
+
+<br/>
+A **Structural Model** For the Johnson & Johnson data, say $\small y_t$, shown in Fig. 1.1, let $\small x_t = log (y_t)$. In this problem, we are going to fit a special type of structural model, $\small x_t = T_t + S_t + N_t$ where $\small T_t$ is a trend component, $\small S_t$ is a seasonal component, and $\small N_t$ is noise. In our case, time $\small t$ is in quarters (1960.00, 1960.25, ...) so one unit of time is a year.
+<br/><br/><ol>
+(a) Fit the regression model
+<br/>
+$$\small x_t = \beta_t + \alpha_1 Q_1 (t) + \alpha_2 Q_2 (t) + \alpha_3 Q_3 (t) + \alpha_4 Q_4 (t) + w_t$$
+<br/>
+where $\small Q_i (t)$ if time $\small t$ corresponds to quarter $\small i$ = 1, 2, 3, 4, and zero otherwise. The $\small Q_i (t)$'s are called indicator variables. We will assume for now that $\small w_t$ is a Gaussian white noise sequence. *Hint:* Detailed code is given in Code R.4, the last example of Sect. R.4.
+
+<br/><ol>
+**Solution:**
+<br/>
+From Sect.R.4,  we can use the following R code:
+<br/>
+```{r}
+library(astsa)
+trend = time(jj) - 1970 #helps to 'center' time
+Q = factor(cycle(jj) ) #make (Q)uarter factors
+reg1 = lm(log(jj)~0 + trend + Q, na.action=NULL) #no intercept
+summary(reg1)
+```
+<br />
+With the above result, we can now identify the fitted model as $\small x$ = `r round(summary(reg1)$coefficients[1,1],4)` + `r round(summary(reg1)$coefficients[2,1],4)` $\small Q_1 (t)$ + 
+`r round(summary(reg1)$coefficients[3,1],4)` $\small Q_2 (t)$ + `r round(summary(reg1)$coefficients[4,1],4)` $\small Q_3 (t)$ + `r round(summary(reg1)$coefficients[5,1],4)` $\small Q_4 (t)$ + $w_t$, where the residual standard error is `r round(sqrt(deviance(reg1)/df.residual(reg1)),4)` on `r summary(reg1)$df[2]` degrees of freedom.
+
+</ol></ol><br/><br/><ol>
+(b) If the model is correct, what is the estimated average annual increase in the logged earnings per share?
+
+<br/><ol>
+**Solution:**
+<br/>
+Based on the generated results in (a), the estimated average annual increase in the logged earnings per share is the sum of each of the quarter coefficient values. That is, 1.052793 + 1.080916 + 1.151024 + 0.882266 = 4.166999.
+
+</ol></ol><br/><br/><ol>
+(c) If the model is correct, does the average logged earnings rate increase or decrease from the third quarter to the fourth quarter? And, by what percentage does it increase or decrease?
+
+<br/><ol>
+**Solution:**
+<br/>
+Assuming that model is (a) is correct, the difference of the average logged earnings rate from the third quarter to the fourth quarter can be computed as
+
+<center>$\alpha$~4~ - $\alpha$~3~ = 0.882266 - 1.151024 = -0.268758.</center>
+
+In terms of ratio or percentage, this is
+
+$$\small \frac{\alpha_4 - \alpha_3}{\alpha_3} \times 100\% = \frac{0.882266 - 1.151024}{1.151024} \times 100\% = -23.3495\%$$
+
+Therefore, there is a decrease in the average logged earnings from the third quarter to the fourth quarter  by -0.268758 or 23.3495%.
+
+
+</ol></ol><br/><br/><ol>
+(d) What happens if you include an intercept term in the model in (a)? Explain why there was a problem.
+
+<br/><ol>
+**Solution:**
+<br/>
+By considering an intercept term in the model in (a), we can write the following R code:
+<br/>
+```{r}
+reg2 = lm(log(jj)~trend + Q, na.action=NULL) #with intercept
+summary(reg2)
+```
+<br />
+With the above result, we can observe that the first quarter effect is taken away and affects the rest of the quarters. This does not make sense since our aim is to evaluate the effect of each quarter separately.
+
+</ol></ol><br/><br/><ol>
+(e) Graph the data, $\small x_t$, and superimpose the fitted values, say $\hat{x}_t$, on the graph. Examine the residuals, $\small x_t - \hat{x}_t$, and state your conclusions. Does it appear that the model fits the data well (do the residuals look white)?
+
+<br/><ol>
+**Solution:**
+<br/>
+To graph the data, the fitted values and the residuals, the following R code can be used:
+<br/>
+```{r}
+par(mfrow=c(1,2))
+plot(log(jj), main="Plot of data (R) & fitted value (B)", col="#990000") #data
+lines(fitted(reg1), col="#003399") #fitted
+plot(log(jj) - fitted(reg1), main="Plot of residuals", col="#10710a")
+```
+<br />
+Looking at the graph above, we can observe that the noise seems not to follow any pattern. The residuals look white and the fit seems pretty good.
+
+</ol></ol><br/><br/>
+
+
+<br/><br/>
+<ins>***Problem  2.2***</ins>
+
+<br/>
+For the mortality data examined in Example 2.2:
+<br/><br/><ol>
+(a) Add another component to the regression in (2.21) that accounts for the particulate count four weeks prior; that is, add $\small P_{t-4}$ to the regression in (2.21). State your conclusion.
+
+<br/><ol>
+**Solution:**
+<br/>
+We can extend the regression model $\small M_t = \beta_0 + \beta_1 t + \beta_2 (T_t - T) + \beta_3 (T_t - T)^2 + \beta_4 P_t + w_t$ presented in Example 2.2 to add another component that accounts for the particulate account four weeks prior. That is, we add $\small P_{t-4}$ to the regression model. Hence, we will have
+$$\small \hat{M}_t = \beta_0 + \beta_1 t + \beta_2 (T_t - T) + \beta_3 (T_t - T)^2 + \beta_4 P_t + \beta_5 P_{t-4} + w_t$$
+The estimated parameters $\small (\beta_0 ,\beta_1 ,\beta_2 ,\beta_3 ,\beta_4 ,\beta_5)$ can be obtained using the following R code:
+<br/>
+```{r}
+n = length(tempr)
+temp1 = tempr - mean(tempr) #center temperature
+temp2 = temp1^2
+trend = time(cmort) #time
+fit1 = lm(cmort~trend + temp1 + temp2 + part, na.action=NULL)
+fit2 = lm(cmort[5:n]~trend[5:n] + temp1[5:n] + temp2[5:n] + part[5:n] 
+          + part[1:(n-4)], na.action=NULL)
+summary(fit2)
+```
+<br />
+The summary of the fit above suggests that all predictors are statistically significant. The new fitted model can be written as
+$$\small \hat{M}_t = 2,808 - 1.385t - 0.4058 (T_t - T) + 0.02155 (T_t - T)^2 + 0.2029P_t + 0.1030P_{t-4} + w_t$$
+
+</ol></ol><br/><br/><ol>
+(b) Draw a scatterplot matrix of $\small M_t$, $\small T_t$, $\small P_t$ and $\small P_{t-4}$ and then calculate the pairwise correlations between the series. Compare the relationship between $\small M_t$ and $\small P_t$ versus $\small M_t$ and $\small P_{t-4}$.
+
+<br/><ol>
+**Solution:**
+<br/>
+We can use this R code to generate the required scatterplot matrix:
+<br/>
+```{r}
+x = cbind('M_t'=cmort[5:n], 'T_t'=temp1[5:n], 'P_t'=part[5:n], 
+          'P_t-4'=part[1:(n-4)])
+pairs(x)
+```
+<br/>
+To calculate the pairwise correlations between the series, we can use the code below.
+<br/>
+```{r}
+cor(x)
+```
+<br />
+As we can observed from the results above, the correlation between Mortality ($\small M_t$) and Particulate 4 weeks prior ($\small P_{t-4}$) is stronger at 0.5209993 against the correlation between Mortality ($\small M_t$) and Particulate count ($\small P_t$) at 0.4422896. Therefore, the particulate count four weeks prior, $\small P_{t-4}$, is a significant variable and should be included in the regression.
+
+</ol></ol><br/><br/>
+
+
+<br/><br/>
+<ins>***Problem  2.3***</ins>
+
+<br/>
+In this problem, we explore the difference between a random walk and a trend stationary process.
+<br/><br/><ol>
+(a) Generate *four* series that are random walk with drift, (1.4), of length $\small n=100$ with $\small \delta=0.01$ and $\small \sigma_w=1$. Call the data $\small x_t$ for $\small t=1,...,100$. Fit the regression $\small x_t=\beta_t+w_t$ using least squares. Plot the data, the true mean function (i.e., $\small \mu_t=0.01t$ and the fitted line, $\small \hat{x}_t=\hat{\beta}t$, on the same graph. *Hint:* The following R code may be useful.
+
+<br/><ol>
+```{r, eval=F, echo=T}
+par(mfrow=c(2,2), mar=c(2.5,2.5,0,0)+.5, mgp=c(1.6,.6,0)) # set up
+for (i in 1:4){
+    x = ts(cumsum(rnorm(100,.01,1)))        # data
+    regx = lm(x~0+time(x), na.action=NULL)  # regression
+    plot(x, ylab='Random Walk w Drift')     # plots
+    abline(a=0, b=.01, col=2, lty=2)        # true mean (red - dashed)
+    abline(regx, col=4)                     # fitted line (blue - solid)
+}
+```
+
+</ol><br/><ol>
+**Solution:**
+<br/>
+Using least squares in the R code below, we can plot the data, the true mean function and the fitted line.
+<br/>
+
+```{r}
+set.seed(2)
+n = 100
+delta = 0.01
+time = 1:n
+par(mfrow=c(2,2), mar=c(2.5,2.5,0.5,0)+0.5, mgp=c(1.6,0.6,0)) #setup
+for (i in 1:4){
+  w_a = rnorm(n, 0, 1)
+  x = c()
+  for (t in time){
+    x[t] = delta * t + sum(w_a[i:t]) #data
+  }
+  mu_a = delta*time #true mean function
+  fit_a = lm(x~0 + time) #regression
+  min_ya = floor(min(x))-1; max_ya = ceiling(max(x)) #sets y-axis limit
+  plot(time, x, ylim=c(min_ya,max_ya), type="l", main=paste("Random Walk with Drift",i)) #plots
+  lines(time, fitted(fit_a), col="#003399") #fitted line (blue, solid)
+  lines(time, mu_a, col="#990000",lty=2) #true mean (red, dashed)
+}
+```
+
+</ol></ol><br/><br/><ol>
+(b) Generate *four* series of length $\small n=100$ that are linear trend plus noise, say $\small y_t=0.01t+w_t$, where $\small t$ and $\small w_t$ are as in part (a). Fit the regression $\small x_t=\beta_t+w_t$ using least squares. Plot the data, the true mean function (i.e., $\small \mu_t=0.01t$ and the fitted line, $\small \hat{y}_t=\hat{\beta}t$, on the same graph.
+
+<br/><ol>
+**Solution:**
+<br/>
+Using similar approach in (a) except the process $\small y_t = 0.01t + w_t$, we have the R code below to plot the data, the true mean function and the fitted line.
+<br/>
+
+```{r}
+set.seed(2)
+n = 100
+delta = 0.01
+time = 1:n
+par(mfrow=c(2,2), mar=c(2.5,2.5,0.5,0)+0.5, mgp=c(1.6,0.6,0)) #setup
+for (i in 1:4){
+  w_b = rnorm(n, 0, 1)
+  y = delta * time + w_b #data
+  mu_b = delta*time #true mean function
+  fit_b = lm(y~0 + time) #regression
+  min_yb = floor(min(y)); max_yb = ceiling(max(y)) #sets y-axis limit
+  plot(time, y, ylim=c(min_yb,max_yb), type="l", main=paste("Linear Trend Plus Noise",i)) #plots
+  lines(time, fitted(fit_b), col="#003399") #fitted line (blue, solid)
+  lines(time, mu_b, col="#990000",lty=2) #true mean (red, dashed)
+}
+```
+
+</ol></ol><br/><br/><ol>
+(c) Comment (what did you learn from this assignment).
+
+</ol><br/><ol><ol>
+**Solution:**
+<br/>
+The distance between the fit and the true mean in part (b) is significantly closer compared to that of part (a). This is due to the errors in $\small y_t$ which are independent and is one of the main assumptions of the linear regression. Whereas, the errors in $\small x_t$ are correlated due to the accumulation of the white noises.
+
+</ol></ol><br/><br/>
+<center>*--- Nothing follows ---*</center>
+<br/><br/>
